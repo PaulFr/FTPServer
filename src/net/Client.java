@@ -1,6 +1,5 @@
 package net;
 
-import io.Transfer;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -15,6 +14,7 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.file.Files;
 
+import io.Transfer;
 import server.ClientManager;
 import server.Server;
 
