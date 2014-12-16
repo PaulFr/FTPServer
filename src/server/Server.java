@@ -33,7 +33,7 @@ public class Server {
 	      {
 	        clientManager.add(serv.accept());
 	      }
-	    } catch (Exception e) {
+	} catch (Exception e) {
 	}
 
 	}
