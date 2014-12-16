@@ -1,34 +1,24 @@
 package net;
 
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
-import java.net.Socket;
-import java.nio.file.Files;
-
 import io.Transfer;
 import server.ClientManager;
 import server.Server;
 
+import java.io.*;
+import java.net.Socket;
+
 public class Client implements Runnable {
 
+	private static int COUNT = 0;
 	private Socket socket;
 	private PrintWriter output;
 	private BufferedReader input;
 	private ClientManager clientManager;
 	private boolean storageState = false;
 	private String storagePath = "";
+	private int storageSize = -1;
 	private int id;
-
-	private static int COUNT = 0;
 
 	public Client(Socket socket, ClientManager cm) {
 		this.socket = socket;
@@ -76,55 +66,70 @@ public class Client implements Runnable {
 					}
 					
 					if(this.storageState){
-						DataInputStream dis = new DataInputStream(socket.getInputStream());
+						if (storageSize == -1) {
+							storageSize = Integer.valueOf(message);
+							System.out.println("Fichier de taille " + storageSize);
+						} else {
+							System.out.println(message);
+							PrintWriter writer = new PrintWriter(storagePath, "UTF-8");
+							writer.print(message);
+							writer.close();
+							storageSize = -1;
+							storageState = false;
+							this.send(Messages.get(201));
+						}
+						/*DataInputStream dis = new DataInputStream(socket.getInputStream());
 						int size = dis.readInt();
 						byte b[] = new byte[2048];
 						dis.read(b, 0, size);
 						Transfer.go(socket.getInputStream(), new FileOutputStream(this.storagePath) ,true);
-						this.storageState = false;
+						this.storageState = false;*/
+						message = "";
 						continue;
 					}
 					switch (commande) {
-					case "RETR":
-						FileInputStream fis = null;
-						try {
-							fis = new FileInputStream(Server.getCleanPath()
-									+ "/" + req);
-							this.send(Messages.get(200));
-							this.send(String.valueOf(fis.getChannel().size()));
-							Transfer.go(fis, socket.getOutputStream(), false);
-							this.send(Messages.get(203));
-						} catch (Exception e) {
-							this.send(Messages.get(403));
-						}
-						break;
-					case "STOR":
-						//verif de secu
-						this.storageState = true;
-						this.storagePath = Server.getCleanPath()
-								+ "/" + req;
-						this.send(Messages.get(200));
-						break;
-					case "DELE":
-						File f = new File(Server.getCleanPath() + "/" + req);
-						if (f.exists()) {
-							this.send(Messages.get(200));
-							if (f.delete())
-								this.send(Messages.get(202));
-							else
-								this.send(Messages.get(402));
-						} else {
-							this.send(Messages.get(402));
+						case "RETR":
+							FileInputStream fis = null;
+							try {
+								fis = new FileInputStream(Server.getCleanPath()
+										+ "/" + req);
+								this.send(Messages.get(200));
+								this.send(String.valueOf(fis.getChannel().size()));
+								Transfer.go(fis, socket.getOutputStream(), false);
+								this.send(Messages.get(203));
+							} catch (Exception e) {
+								this.send(Messages.get(403));
+							}
 							break;
-						}
+						case "STOR":
+							//verif de secu
+							this.storageState = true;
+							this.storagePath = Server.getCleanPath()
+									+ "/" + req;
+							this.send(Messages.get(200));
+							break;
+						case "DELE":
+							File f = new File(Server.getCleanPath() + "/" + req);
+							System.gc();
+							if (f.exists()) {
+								this.send(Messages.get(200));
+								if (f.delete())
+									this.send(Messages.get(202));
+								else {
+									this.send(Messages.get(402));
+								}
+							} else {
+								this.send(Messages.get(402));
+								break;
+							}
 
-						break;
-					case "QUIT":
-						this.socket.close();
-						break;
-					default:
-						this.send(Messages.get(400));
-						break;
+							break;
+						case "QUIT":
+							this.socket.close();
+							break;
+						default:
+							this.send(Messages.get(400));
+							break;
 					}
 					message = "";
 				}

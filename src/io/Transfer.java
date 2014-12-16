@@ -14,7 +14,9 @@ public class Transfer
         int n;
         while((n=in.read(buf))!=-1)
             out.write(buf,0,n);
-       
+
+        out.write(0);
+
         if (closeOnExit)
         {
             in.close();

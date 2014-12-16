@@ -1,12 +1,10 @@
 package client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-
+import io.Transfer;
 import util.Console;
+
+import java.io.*;
+import java.net.Socket;
 
 public class Client {
 
@@ -14,9 +12,41 @@ public class Client {
 	private static Console console;
 	private static PrintWriter output;
 	private static BufferedReader input;
-	
+	private static int retrMode = 0;
+	private static String retrPath = "";
+
 	public static void send(String msg){
-		output.println(msg);
+		String commande = "", req = "";
+		try {
+			commande = msg.substring(0, 4);
+			req = msg.substring(5);
+		} catch (Exception e) {
+
+		}
+
+		switch (commande) {
+			case "STOR":
+				try {
+					FileInputStream fis = new FileInputStream(req);
+					output.println(msg);
+					output.println(String.valueOf(fis.getChannel().size()));
+					Transfer.go(fis, socket.getOutputStream(), false);
+
+				} catch (Exception e) {
+					System.err.println("Le fichier " + req + " n'existe pas !");
+					return;
+				}
+				break;
+			case "RETR":
+				output.println(msg);
+				retrMode = 1;
+				retrPath = req;
+				break;
+			default:
+				output.println(msg);
+				break;
+		}
+
 		output.flush();
 	}
 	public static void main(String[] args) {
@@ -41,7 +71,21 @@ public class Client {
 							&& charCur[0] != '\r')
 						message += charCur[0];
 					else if (!message.equalsIgnoreCase("")) {
-						System.out.println(message);
+						if (retrMode == 1) {
+							System.out.println(message);
+							if (message.substring(0, 3) != "200") retrMode = 0;
+							retrMode = 2;
+						} else if (retrMode == 2) {
+							retrMode = 3;
+							System.out.println("Taille du fichier : " + message);
+						} else if (retrMode == 3) {
+							PrintWriter writer = new PrintWriter(retrPath, "UTF-8");
+							writer.print(message);
+							writer.close();
+							retrMode = 0;
+						} else {
+							System.out.println(message);
+						}
 						message = "";
 					}
 				}

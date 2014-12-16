@@ -1,10 +1,9 @@
 package server;
 
+import util.Console;
+
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.nio.file.Path;
-
-import util.Console;
 
 public class Server {
 
@@ -34,9 +33,9 @@ public class Server {
 	      {
 	        clientManager.add(serv.accept());
 	      }
-	    }
-	    catch (Exception e){ }
-	    
+	    } catch (Exception e) {
+	}
+
 	}
 	
 	public static String getCleanPath() {
